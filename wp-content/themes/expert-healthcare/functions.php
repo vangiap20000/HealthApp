@@ -274,3 +274,73 @@ if (!function_exists('expert_healthcare_custom_shop_per_page')) {
     }
 }
 
+// This hook action add file custom.js
+add_action('wp_enqueue_scripts', 'add_custom_js_script', 20);
+function add_custom_js_script()
+{
+	wp_enqueue_script('custom_script', get_stylesheet_directory_uri() . '/js/custom.js', array('jquery'), '1.0', true);
+}
+
+// $ handle – Handle là tên duy nhất của script. Giả sử chúng ta gọi là “custom_script”
+// array jquery WordPress sẽ tự động chuyển javascript xuống footer và tự động load jq
+add_action('wp_footer', 'wpb_hook_javascript', 30);
+function wpb_hook_javascript()
+{
+?>
+	<script type="text/javascript">
+		let urlAjax = "<?= admin_url('admin-ajax.php') ?>";
+		let postId = <?= get_the_id() ?>;
+	</script>
+<?php
+}
+
+function add_likes_count_to_post()
+{
+	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'posts';
+	$column_name = 'likes_count';
+	$create_ddl = "ALTER TABLE $table_name ADD $column_name bigint(20) NULL DEFAULT 0;";
+	maybe_add_column($table_name, $column_name, $create_ddl);
+}
+
+// add_action('init', 'add_likes_count_to_post');
+
+/* Action da dang nhap */
+add_action('wp_ajax_handel_like_post', 'handel_like_post');
+/* Action chua dang nhap */
+add_action('wp_ajax_nopriv_handel_like_post', 'handel_like_post');
+function handel_like_post() {
+	$postId = $_POST['post_id'];
+	$post = get_post( $postId );
+	global $wpdb;
+	$table = $wpdb->prefix . 'posts';
+	$data = [
+		'likes_count' => $post->likes_count + 1,
+	];
+	$wpdb->update(
+		$table,
+		$data,
+		['id' => $post->ID]
+	);
+}
+
+// thêm một cột mới vào table all post có sẵn.
+add_filter('manage_post_posts_columns', 'add_column_to_table_all_post', 10, 1);
+
+function add_column_to_table_all_post($columns)
+{
+	return array_merge($columns, [
+		'likes_count' => 'Count Like'
+	]);
+}
+
+// Đổ dữ liệu vào cột vừa mới thêm vào ở trên
+add_action('manage_post_posts_custom_column', function($columnKey, $postId) {
+	if ($columnKey == 'likes_count') {
+		echo get_post( $postId)->likes_count;
+	}	
+}, 10, 2);
+
+
+// $accepted_args => tổng số param truyền vào
