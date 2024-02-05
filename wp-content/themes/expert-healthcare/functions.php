@@ -304,7 +304,7 @@ function add_likes_count_to_post()
 	maybe_add_column($table_name, $column_name, $create_ddl);
 }
 
-// add_action('init', 'add_likes_count_to_post');
+add_action('init', 'add_likes_count_to_post');
 
 /* Action da dang nhap */
 add_action('wp_ajax_handel_like_post', 'handel_like_post');
